@@ -36,11 +36,19 @@ if (!apiKey) {
 
 const CONFIGURED = env("GEMINI_SEARCH_MODEL") || "gemini-2.5-flash";
 
+// CONFIGURED goes first so the model this app actually uses is always probed.
+// Without it, a custom GEMINI_SEARCH_MODEL is never tested and the script exits
+// non-zero for a model it simply never tried — which reads as the grounding
+// claim failing. Keep the default here in sync with SEARCH_MODEL in
+// src/lib/gemini.ts.
 const MODELS = [
-  "gemini-2.5-flash",
-  "gemini-flash-latest",
-  "gemini-3.1-pro-preview",
-  "gemini-pro-latest",
+  ...new Set([
+    CONFIGURED,
+    "gemini-2.5-flash",
+    "gemini-flash-latest",
+    "gemini-3.1-pro-preview",
+    "gemini-pro-latest",
+  ]),
 ];
 
 const PROMPT =

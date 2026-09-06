@@ -51,7 +51,13 @@ export async function checkLink(rawUrl: string): Promise<LinkCheck> {
 
   if (!isRedirect) {
     const head = await attempt(parsed, "HEAD");
-    if (head.status !== "retry") return { url: head.url ?? url, status: head.status };
+    // "broken" must NOT short-circuit here: a 404 from HEAD is the ordinary
+    // way a guessed deep path fails, and it is exactly the case the funder-site
+    // fallback below exists to rescue. Returning early on it made that fallback
+    // unreachable for its main case.
+    if (head.status !== "retry" && head.status !== "broken") {
+      return { url: head.url ?? url, status: head.status };
+    }
   }
 
   const get = await attempt(parsed, "GET");
@@ -95,6 +101,10 @@ async function attempt(
 
     // res.url is the URL after redirects — this is what un-wraps a grounding link.
     const final = res.url || url.toString();
+
+    // Only the status line matters here. Release the socket rather than
+    // leaving a funder's homepage streaming into a buffer nobody reads.
+    void res.body?.cancel().catch(() => {});
 
     if (res.ok) return { status: "verified", url: final };
     if (res.status === 404 || res.status === 410) return { status: "broken", url: final };

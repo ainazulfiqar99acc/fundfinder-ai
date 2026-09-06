@@ -1,23 +1,30 @@
 import type { Grant, LinkStatus } from "@/types";
 
-const LINK_BADGES: Record<LinkStatus, { label: string; className: string }> = {
+export const LINK_BADGES: Record<
+  LinkStatus,
+  { label: string; className: string; hint: string }
+> = {
   verified: {
     label: "✓ Link verified",
     className:
       "bg-emerald-50 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300",
+    hint: "We fetched this URL and it returned a page. That confirms the page exists — not that the grant is open, or that its deadline is right.",
   },
   "funder-site": {
     label: "→ Funder site (named page was gone)",
     className:
       "bg-amber-50 text-amber-900 dark:bg-amber-950 dark:text-amber-200",
+    hint: "The exact page Gemini named did not resolve. This links the funder's own site instead.",
   },
   broken: {
     label: "⚠ Link didn't resolve",
     className: "bg-red-50 text-red-800 dark:bg-red-950 dark:text-red-300",
+    hint: "Bad hostname, or the server returned 404. Treat this grant as unconfirmed.",
   },
   unverified: {
     label: "Link unverified",
     className: "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400",
+    hint: "The check was inconclusive — the site blocked us or timed out. That is not evidence the grant is fake.",
   },
 };
 
@@ -30,10 +37,19 @@ export default function GrantCard({
   onDraftLoi: (grant: Grant) => void;
   drafting: boolean;
 }) {
+  // This whole project rests on not trusting model-supplied URLs, so never
+  // render one as a live href without checking the scheme. verify-link returns
+  // the raw string unchanged when it rejects it, which can include javascript:
+  // or data: — React will happily render either.
+  const safeUrl = /^https?:\/\//i.test(grant.applicationUrl)
+    ? grant.applicationUrl
+    : "";
+  const badge = LINK_BADGES[grant.linkStatus];
+
   return (
     <div className="flex flex-col gap-3 rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
       <div className="flex items-start justify-between gap-3">
-        <div>
+        <div className="min-w-0">
           <h3 className="font-semibold text-zinc-900 dark:text-zinc-50">
             {grant.name}
           </h3>
@@ -41,7 +57,7 @@ export default function GrantCard({
             {grant.funder}
           </p>
         </div>
-        <span className="shrink-0 rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+        <span className="max-w-[45%] shrink-0 rounded-full bg-emerald-50 px-3 py-1 text-right text-xs font-medium text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
           {grant.amount}
         </span>
       </div>
@@ -50,7 +66,7 @@ export default function GrantCard({
         {grant.description}
       </p>
 
-      <div className="grid grid-cols-2 gap-3 text-xs text-zinc-500 dark:text-zinc-400">
+      <div className="grid grid-cols-1 gap-3 text-xs text-zinc-500 sm:grid-cols-2 dark:text-zinc-400">
         <div>
           <div className="font-medium text-zinc-600 dark:text-zinc-300">
             Deadline
@@ -71,10 +87,10 @@ export default function GrantCard({
       </p>
 
       <div className="mt-1 flex flex-wrap items-center gap-3">
-        {grant.applicationUrl ? (
+        {safeUrl ? (
           <>
             <a
-              href={grant.applicationUrl}
+              href={safeUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="text-sm font-medium text-emerald-700 underline underline-offset-2 hover:text-emerald-800 dark:text-emerald-400"
@@ -82,11 +98,10 @@ export default function GrantCard({
               View grant page ↗
             </a>
             <span
-              className={`rounded-full px-2.5 py-1 text-xs font-medium ${
-                LINK_BADGES[grant.linkStatus].className
-              }`}
+              title={badge.hint}
+              className={`cursor-help rounded-full px-2.5 py-1 text-xs font-medium ${badge.className}`}
             >
-              {LINK_BADGES[grant.linkStatus].label}
+              {badge.label}
             </span>
             {grant.claimedUrl && (
               <span className="w-full break-all text-xs text-zinc-500 dark:text-zinc-400">
@@ -99,7 +114,12 @@ export default function GrantCard({
             )}
           </>
         ) : (
-          <span className="text-sm text-zinc-400">No link provided</span>
+          <span
+            title="Gemini returned no usable web address for this grant, so nothing about it could be checked."
+            className="cursor-help rounded-full bg-red-50 px-2.5 py-1 text-xs font-medium text-red-800 dark:bg-red-950 dark:text-red-300"
+          >
+            ⚠ No link given — nothing could be checked
+          </span>
         )}
         <button
           onClick={() => onDraftLoi(grant)}

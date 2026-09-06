@@ -2,6 +2,8 @@
   "name": "fundfinderai",
   "version": "0.1.0",
   "private": true,
+  "description": "Grant radar for small NGOs: Gemini Search grounding finds currently-open grants, then every application URL is independently checked before you see it.",
+  "license": "MIT",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

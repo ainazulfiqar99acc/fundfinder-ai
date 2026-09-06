@@ -72,7 +72,9 @@ npm run dev
 GEMINI_API_KEY=your-key-here
 # Must be a model that honours the googleSearch tool - see npm run check-grounding
 GEMINI_SEARCH_MODEL=gemini-2.5-flash
-# Drafting needs no grounding, so a stronger model is fine here
+# Drafting needs no grounding, so a stronger model is fine here.
+# Preview ids are access-gated; if your key cannot call it, the app falls back
+# to gemini-2.5-flash on its own.
 GEMINI_DRAFT_MODEL=gemini-3.1-pro-preview
 ```
 

@@ -4,19 +4,30 @@
 
 The money exists. A small NGO just cannot find it.
 
-After the 2025–26 collapse of USAID funding, organisations that had one funder now need six. The people doing that search are usually the same people running the programme — a director who is also the grant writer, working evenings. Foundation money is sitting there, open, unclaimed, spread across a few thousand pages nobody has time to read.
+That is what a generosity problem looks like at the small end. The giving has already happened — foundations with open, rolling, unclaimed programmes, sitting there — and it is spread across a few thousand pages nobody has time to read. After the 2025–26 collapse of USAID funding, organisations that had one funder now need six, and the people doing that searching are the same people running the programme: a director who is also the grant writer, working evenings. Generosity is not the scarce thing here. Attention is.
 
-So an AI grant finder is an obvious idea. It is also a dangerous one, because the failure mode is not "unhelpful." A three-person NGO that spends a week writing an application against a deadline that never existed has lost a week it cannot get back, and it will not find out until it submits.
+So an AI grant finder is an obvious idea. It is also a dangerous one, because the failure mode is not "unhelpful." A three-person NGO that spends a week writing an application against a deadline that never existed has lost a week it cannot get back, and it will not find out until it submits. The tool would have taken the one thing that was actually scarce.
 
-**FundFinderAI** describes the problem in one sentence: it searches the live web for currently open grants that fit your NGO, and then it does not trust its own model about any of them. Every application URL Gemini produces is independently fetched before you see it, and the card tells you what happened when we tried.
+**FundFinderAI** is the response, in one sentence: it searches the live web for currently open grants that fit your NGO, and then it refuses to trust its own model about any of them. Every application URL Gemini produces is independently fetched before you see it, and the card tells you what happened when we tried.
 
-**In one line:** the interesting part is not that it searches — it's everything the app does to establish that the search actually happened and that the result actually exists.
+The interesting part is not that it searches. It is everything the app does to establish that the search actually happened and that the result actually exists.
 
 ## Demo
 
 **Live: [fundfinder-ai.vercel.app](https://fundfinder-ai.vercel.app)** — describe an NGO, get grants, open a drafted Letter of Inquiry.
 
 <!-- IMAGE 1: media/fundfinder-demo.gif  (the full flow, sped up) -->
+
+Give it 30–120 seconds. It is running ten to thirty real Google searches and then fetching every URL that comes back, and the page shows you the clock while it does. Paste this in if you would rather not invent an NGO:
+
+> **NGO name:** Kisumu STEM Girls Collective
+> **Location:** Kisumu, Kenya
+> **Mission:** We run after-school robotics and coding clubs for girls aged 12-17 in Kisumu, Kenya, and train their teachers to keep the clubs running.
+> **Focus areas:** STEM education, girls education, teacher training
+> **Annual budget size:** Under $250,000 annually
+> **Target population:** Adolescent girls in low-income neighbourhoods of Kisumu
+
+You will not get my results. They vary run to run — which is itself the point, and is in Limitations.
 
 A real, unmodified run against the deployed app, for a girls' STEM education NGO in Kisumu, Kenya. Gemini ran **26 Google searches** and returned five grants, sorted so the ones that survived checking lead:
 
@@ -29,9 +40,11 @@ A real, unmodified run against the deployed app, for a girls' STEM education NGO
   resolve
 ```
 
-<!-- IMAGE 2: media/04-link-caught.png  (a caught card next to a verified one) -->
+<!-- IMAGE 2: media/04-link-caught.png
+     caption: A dead funder link caught, with the grounding panel below it
+     listing that same funder among the pages Google retrieved -->
 
-The bottom row is the product working. And it carries a detail worth pausing on: the grounding panel on that same page lists `hansenfamilyfoundation.org` among the pages it retrieved. Google's index has that funder. The live site does not answer. **Grounding retrieved it and the URL is still dead** — which is the entire argument for checking rather than trusting, in one row.
+The bottom row is the product working — and the grounding panel on that same page lists `hansenfamilyfoundation.org` among the pages it retrieved. Google's index has that funder. The live site does not answer. **Grounding retrieved it and the URL is still dead** — which is the entire argument for checking rather than trusting, in one row.
 
 Ask for a Letter of Inquiry against that grant and the app says so before you write a word:
 
@@ -39,9 +52,29 @@ Ask for a Letter of Inquiry against that grant and the app says so before you wr
 
 An earlier run caught a harder one: `au-eu-youthlab.com`, a confident, plausible, entirely non-existent domain. DNS does not resolve it. It never reached the user.
 
+### You do not have to take the screenshots on faith
+
+This is a post about plausible output not being proof, so the central claim — that the app searches rather than remembers — ships as a runnable check. It talks to the Gemini API and nothing else: not my server, not my code paths. About thirty seconds:
+
+```bash
+git clone https://github.com/unicorn-9-spec/fundfinder-ai && cd fundfinder-ai
+npm install
+cp .env.local.example .env.local   # then put your key in it
+npm run check-grounding
+```
+
+It prints which models actually honour `googleSearch` and **exits non-zero if the one this app is configured with did not search.** The table it produces is further down.
+
 ## Code
 
 {% github unicorn-9-spec/fundfinder-ai %}
+
+Four files carry the argument:
+
+- [`src/lib/verify-link.ts`](https://github.com/unicorn-9-spec/fundfinder-ai/blob/main/src/lib/verify-link.ts) — the gate. The asymmetry between `broken` and `unverified` is the whole design, and the comments say why.
+- [`scripts/check-grounding.mjs`](https://github.com/unicorn-9-spec/fundfinder-ai/blob/main/scripts/check-grounding.mjs) — the four-model grounding check above.
+- [`src/app/api/match-grants/route.ts`](https://github.com/unicorn-9-spec/fundfinder-ai/blob/main/src/app/api/match-grants/route.ts) — the grounded call, the prompt rule that every funder must have appeared in a search result, and verified-first ranking.
+- [`src/types/index.ts`](https://github.com/unicorn-9-spec/fundfinder-ai/blob/main/src/types/index.ts) — four link states, with the reasoning for each written into the type.
 
 ## How I Built It
 
@@ -92,6 +125,12 @@ Plus the same rule for the URL, which is the part most easily fabricated: use th
 
 Same profile, after: five grants, three verified, one inconclusive, one caught. The gate's job is to catch what slips through, not to license the model to guess.
 
+### The bug in the gate itself
+
+Worth admitting, because it is the same class of error as everything above. The funder-site fallback — the thing that rescues a real funder whose deep path the model guessed — was very nearly dead code. `checkLink` tried `HEAD` first and returned immediately on any settled verdict, and a 404 is a settled verdict, so the ordinary case (a well-behaved server answering `HEAD` with 404) returned `broken` and never reached the root probe below it. The fallback only ever fired for servers that reject `HEAD` outright.
+
+The feature worked in the demo, was described accurately in the README, and was unreachable for the exact case it was written for. The fix is one condition — let `broken` fall through instead of returning — and it is why real funders now surface as their homepage instead of a dead end.
+
 ### The gate, and why its verdicts are deliberately lopsided
 
 `src/lib/verify-link.ts` fetches every URL the model produced. What matters is what it refuses to conclude:
@@ -113,7 +152,7 @@ Every failure in this post came out of a live, unmodified run against the deploy
 - **Eligibility and match reasoning are the model's reading**, unverified by anything.
 - **The LOI is a first draft**, not a submission. It is there to get past a blank page.
 - **No real NGO has used this.** It is tested against profiles I wrote.
-- **Grounded results are narrower.** Turning grounding on cut a six-grant answer to three or five. That is the honest number, and the six were partly fiction.
+- **Grounded results are narrower.** Turning grounding on cut a six-grant answer to three-to-five. That is the honest number, and the six were partly fiction.
 - **It is slow.** 30–120 seconds per search, because 10–30 real Google searches happen and then every URL returned is fetched. That is the cost of not guessing, but it is a real cost and I have not hidden it behind a fake progress bar.
 - **Results vary between identical runs.** The same profile returns different funders each time, and the caught-link rate moves with it. There is no seed to pin.
 
@@ -123,7 +162,7 @@ Every failure in this post came out of a live, unmodified run against the deploy
 
 Gemini is used twice, and the interesting engineering is in refusing to trust it both times.
 
-1. **Search grounding is treated as a claim to be checked, not a setting to be enabled.** Three of four models tested accept `googleSearch` and silently never run it, producing a fully convincing ungrounded app. `npm run check-grounding` is a committed, runnable test of that premise that exits non-zero when it fails.
+1. **Search grounding is treated as a claim to be checked, not a setting to be enabled.** Three of four models tested accept `googleSearch` and silently never run it, producing a fully convincing ungrounded app. `npm run check-grounding` is a committed, runnable test of that premise that exits non-zero when it fails. The search call passes two Google tools — `googleSearch` to retrieve, and `urlContext` so the model reads candidate funder pages rather than only their snippets — and the app then re-fetches every URL itself anyway. A tool the model *may* have invoked is not evidence that it did.
 2. **`webSearchQueries`, not `groundingChunks`, is the proof grounding ran** — a distinction that a bare-JSON prompt makes load-bearing, and getting it wrong made a correct configuration look broken.
 3. **The model's output is externally verified before display.** Every URL is fetched; verdicts are asymmetric so ambiguity never becomes a false accusation; dead deep paths fall back to the funder's live site with the invented URL shown struck through.
 4. **The second call is deliberately unglamorous.** LOI drafting needs no grounding, so it uses the stronger model with no tools — the two calls are configured for what they actually need rather than uniformly.

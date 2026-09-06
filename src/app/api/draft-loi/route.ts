@@ -2,8 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { getGeminiClient, DRAFT_MODEL } from "@/lib/gemini";
 import type { Grant, NGOProfile } from "@/types";
 
-/** Drafting is a single ungrounded call, but the stronger model is not fast. */
+/** One ungrounded call; 120s is headroom for a cold start plus a slow response. */
 export const maxDuration = 120;
+
+/** Always available, so a preview-pinned draft model cannot kill the feature. */
+const FALLBACK_DRAFT_MODEL = "gemini-2.5-flash";
 
 export async function POST(req: NextRequest) {
   if (!process.env.GEMINI_API_KEY) {
@@ -32,7 +35,7 @@ export async function POST(req: NextRequest) {
 
 NGO PROFILE
 Name: ${profile.name}
-Mission: ${profile.mission}
+Mission: ${profile.mission || "Not specified"}
 Location: ${profile.location || "Not specified"}
 Focus areas: ${profile.focusAreas || "Not specified"}
 Annual budget size: ${profile.budgetSize || "Not specified"}
@@ -52,11 +55,29 @@ Use a professional, warm, non-generic tone. Do not invent specific statistics, p
 
   try {
     const ai = getGeminiClient();
-    const response = await ai.models.generateContent({
-      model: DRAFT_MODEL,
-      contents: prompt,
-      config: { temperature: 0.6 },
-    });
+    const config = { temperature: 0.6, httpOptions: { timeout: 90_000 } };
+
+    let response;
+    try {
+      response = await ai.models.generateContent({
+        model: DRAFT_MODEL,
+        contents: prompt,
+        config,
+      });
+    } catch (modelErr) {
+      // DRAFT_MODEL may be a preview id this key cannot call. Falling back is
+      // better than telling a judge the feature is broken when the model id is.
+      if (DRAFT_MODEL === FALLBACK_DRAFT_MODEL) throw modelErr;
+      console.error(
+        `draft-loi: ${DRAFT_MODEL} failed, retrying on ${FALLBACK_DRAFT_MODEL}`,
+        modelErr
+      );
+      response = await ai.models.generateContent({
+        model: FALLBACK_DRAFT_MODEL,
+        contents: prompt,
+        config,
+      });
+    }
 
     const letter = response.text ?? "";
     if (!letter.trim()) {

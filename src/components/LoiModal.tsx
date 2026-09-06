@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Grant } from "@/types";
 
 export default function LoiModal({
@@ -12,30 +12,72 @@ export default function LoiModal({
   letter: string;
   onClose: () => void;
 }) {
-  const [copied, setCopied] = useState(false);
+  const [copyState, setCopyState] = useState<"idle" | "ok" | "fail">("idle");
+  const closeRef = useRef<HTMLButtonElement>(null);
+  // Whether the current gesture STARTED on the backdrop. Without this, dragging
+  // a text selection out of the panel ends with mouseup on the backdrop, which
+  // dispatches click there and destroys the letter the user was selecting.
+  const startedOnBackdrop = useRef(false);
+
+  // Mount-only: take focus, lock the background, and give focus back on close.
+  useEffect(() => {
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    closeRef.current?.focus();
+
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      previouslyFocused?.focus();
+    };
+  }, []);
+
+  // Separate, so a new onClose identity rebinds the key handler without
+  // re-stealing focus or re-locking scroll on every parent render.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose]);
 
   async function copyLetter() {
     try {
       await navigator.clipboard.writeText(letter);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      setCopyState("ok");
+      setTimeout(() => setCopyState("idle"), 2000);
     } catch {
-      // Clipboard API unavailable; user can still select and copy manually.
+      // Clipboard API unavailable (insecure context, some webviews). Say so —
+      // a silent no-op is indistinguishable from a click that never landed,
+      // and the user would paste stale contents into a funder email.
+      setCopyState("fail");
     }
   }
 
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-      onClick={onClose}
+      onMouseDown={(e) => {
+        startedOnBackdrop.current = e.target === e.currentTarget;
+      }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget && startedOnBackdrop.current) onClose();
+      }}
     >
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="loi-title"
         className="flex max-h-[85vh] w-full max-w-2xl flex-col rounded-xl bg-white shadow-xl dark:bg-zinc-900"
-        onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-4 border-b border-zinc-200 p-5 dark:border-zinc-800">
           <div>
-            <h2 className="font-semibold text-zinc-900 dark:text-zinc-50">
+            <h2
+              id="loi-title"
+              className="font-semibold text-zinc-900 dark:text-zinc-50"
+            >
               Draft LOI — {grant.name}
             </h2>
             <p className="text-sm text-zinc-500 dark:text-zinc-400">
@@ -43,6 +85,7 @@ export default function LoiModal({
             </p>
           </div>
           <button
+            ref={closeRef}
             onClick={onClose}
             className="rounded-md p-1 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800"
             aria-label="Close"
@@ -51,7 +94,7 @@ export default function LoiModal({
           </button>
         </div>
 
-        <div className="overflow-y-auto p-5">
+        <div tabIndex={0} className="overflow-y-auto p-5">
           {grant.linkStatus === "broken" && (
             <p className="mb-3 rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
               <strong>We could not reach this funder&apos;s page.</strong> The
@@ -80,7 +123,11 @@ export default function LoiModal({
             onClick={copyLetter}
             className="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-800"
           >
-            {copied ? "Copied!" : "Copy to clipboard"}
+            {copyState === "ok"
+              ? "Copied!"
+              : copyState === "fail"
+                ? "Copy failed — select the text"
+                : "Copy to clipboard"}
           </button>
         </div>
       </div>

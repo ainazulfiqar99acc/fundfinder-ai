@@ -101,8 +101,8 @@ If you cannot find any currently open grants with high confidence, return an emp
     // the URL it actually resolved to (this un-wraps grounding redirects).
     grants = await Promise.all(
       grants.map(async (grant) => {
-        const { url, status } = await checkLink(grant.applicationUrl);
-        return { ...grant, applicationUrl: url, linkStatus: status };
+        const { url, status, claimedUrl } = await checkLink(grant.applicationUrl);
+        return { ...grant, applicationUrl: url, claimedUrl, linkStatus: status };
       })
     );
 

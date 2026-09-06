@@ -6,6 +6,11 @@ const LINK_BADGES: Record<LinkStatus, { label: string; className: string }> = {
     className:
       "bg-emerald-50 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300",
   },
+  "funder-site": {
+    label: "→ Funder site (named page was gone)",
+    className:
+      "bg-amber-50 text-amber-900 dark:bg-amber-950 dark:text-amber-200",
+  },
   broken: {
     label: "⚠ Link didn't resolve",
     className: "bg-red-50 text-red-800 dark:bg-red-950 dark:text-red-300",
@@ -83,6 +88,15 @@ export default function GrantCard({
             >
               {LINK_BADGES[grant.linkStatus].label}
             </span>
+            {grant.claimedUrl && (
+              <span className="w-full break-all text-xs text-zinc-500 dark:text-zinc-400">
+                Gemini named{" "}
+                <span className="font-mono line-through">
+                  {grant.claimedUrl}
+                </span>
+                , which did not resolve.
+              </span>
+            )}
           </>
         ) : (
           <span className="text-sm text-zinc-400">No link provided</span>

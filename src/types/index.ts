@@ -12,8 +12,12 @@ export interface GrantSource {
   uri: string;
 }
 
-/** "unverified" means inconclusive (bot-blocked, timeout), not "bad". */
-export type LinkStatus = "verified" | "broken" | "unverified";
+/**
+ * "unverified" means inconclusive (bot-blocked, timeout), not "bad".
+ * "funder-site" means the exact page the model named was gone, but the
+ * funder's own site is live and we fell back to it.
+ */
+export type LinkStatus = "verified" | "funder-site" | "broken" | "unverified";
 
 export interface Grant {
   id: string;
@@ -24,6 +28,12 @@ export interface Grant {
   deadline: string;
   eligibility: string;
   applicationUrl: string;
+  /**
+   * The URL the model originally claimed, when it differs from
+   * applicationUrl — i.e. the dead page we fell back from. Kept so the UI can
+   * show what was actually claimed rather than quietly swapping it.
+   */
+  claimedUrl?: string;
   matchReason: string;
   linkStatus: LinkStatus;
 }

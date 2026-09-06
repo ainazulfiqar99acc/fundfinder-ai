@@ -9,6 +9,8 @@ export interface LinkCheck {
   /** The URL after following redirects — what we actually show the user. */
   url: string;
   status: LinkStatus;
+  /** Set when we fell back from a dead page to the funder's live site. */
+  claimedUrl?: string;
 }
 
 /**
@@ -53,10 +55,21 @@ export async function checkLink(rawUrl: string): Promise<LinkCheck> {
   }
 
   const get = await attempt(parsed, "GET");
-  return {
-    url: get.url ?? url,
-    status: get.status === "retry" ? "unverified" : get.status,
-  };
+  const status = get.status === "retry" ? "unverified" : get.status;
+
+  // A dead deep path on a live domain is the most common failure here: the
+  // funder is real and the grant may well be too, but the model guessed the
+  // page. Rather than a dead end, offer the funder's own site and say plainly
+  // that the page it named was not there.
+  if (status === "broken" && parsed.pathname !== "/") {
+    const root = `${parsed.origin}/`;
+    const rootCheck = await attempt(new URL(root), "GET");
+    if (rootCheck.status === "verified") {
+      return { url: rootCheck.url ?? root, status: "funder-site", claimedUrl: url };
+    }
+  }
+
+  return { url: get.url ?? url, status };
 }
 
 async function attempt(

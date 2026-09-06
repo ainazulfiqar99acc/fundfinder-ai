@@ -44,3 +44,6 @@ next-env.d.ts
 dev.out.log
 dev.err.log
 .vercel
+
+# ...but the template must ship
+!.env.local.example

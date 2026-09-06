@@ -16,28 +16,28 @@ So an AI grant finder is an obvious idea. It is also a dangerous one, because th
 
 **Live: [fundfinder-ai.vercel.app](https://fundfinder-ai.vercel.app)** — describe an NGO, get grants, open a drafted Letter of Inquiry.
 
-<!-- TODO: record and paste the demo gif here -->
+<!-- IMAGE 1: media/fundfinder-demo.gif  (the full flow, sped up) -->
 
-Here is a real, unmodified run from the deployed app, for a girls' STEM education NGO in Kisumu, Kenya. Gemini ran **25 Google searches** and returned four grants:
+A real, unmodified run against the deployed app, for a girls' STEM education NGO in Kisumu, Kenya. Gemini ran **26 Google searches** and returned five grants, sorted so the ones that survived checking lead:
 
 ```
-[verified]    Innovating Education in Africa (IEA) 2026 Call for Submissions
-              -> au.int/en/announcements/20260331/call-submissions-...
-
-[verified]    Draper Richards Kaplan Foundation Social Entrepreneurship Funding
-              -> drkfoundation.org/apply/overview/
-
-[verified]    Funding for Women-Led Initiatives in Africa
-              -> gfmd.info/fundings/funding-for-women-led-initiatives-in-africa/
-
-[funder-site] Young Innovators Challenge 2026
-              -> kcdf.or.ke/
-              Gemini named kcdf.or.ke/opportunities/ , which did not resolve.
+✓ verified     Ambassador's Special Self-Help Fund      U.S. Embassy Kenya
+✓ verified     Seed Grants                              The Pollination Project
+✓ verified     Overseas Aid Trust grants                Blackfriars (BOAT)
+  unverified   Grassroots Human Security Projects       Embassy of Japan in Kenya
+⚠ didn't       Hansen Family Foundation Grant           Hansen Family Foundation
+  resolve
 ```
 
-That last row is the product working. The Kenya Community Development Foundation is a real funder. `/opportunities/` is not a real page. The card links KCDF's live site instead and shows the invented URL struck through, rather than quietly repairing it or quietly shipping a dead link.
+<!-- IMAGE 2: media/04-link-caught.png  (a caught card next to a verified one) -->
 
-An earlier live run caught a harder one: `au-eu-youthlab.com` — a confident, plausible, entirely non-existent domain. DNS does not resolve it. It never reached the user.
+The bottom row is the product working. And it carries a detail worth pausing on: the grounding panel on that same page lists `hansenfamilyfoundation.org` among the pages it retrieved. Google's index has that funder. The live site does not answer. **Grounding retrieved it and the URL is still dead** — which is the entire argument for checking rather than trusting, in one row.
+
+Ask for a Letter of Inquiry against that grant and the app says so before you write a word:
+
+<!-- IMAGE 3: media/07-loi-unreachable-warning.png -->
+
+An earlier run caught a harder one: `au-eu-youthlab.com`, a confident, plausible, entirely non-existent domain. DNS does not resolve it. It never reached the user.
 
 ## Code
 
@@ -76,6 +76,22 @@ Look at the `chunks` column above: it is zero for the model that *is* grounded. 
 
 That mistake was live in the UI too. The app showed a red "Gemini may have answered from its training data" warning whenever chunks were empty, which meant it accused itself of hallucinating on runs where it had correctly searched eight times. The fix was to report the searches, which is also just better: the panel now shows the literal queries Gemini ran, which is far more meaningful to a user than a list of opaque `vertexaisearch` redirect URLs.
 
+### Turning recall up, and watching precision fall over
+
+With grounding correctly on, a search for the Kisumu NGO came back with **zero grants** — "no currently open grants were found with high confidence" — while the search panel showed ten real Google searches. The model had looked and then declined to commit.
+
+My first instinct was that the gate makes conservatism unnecessary: let the model offer plausible funders and let verification sort them out. So I told it that returning an empty list was a failure, and that a funder whose exact call it could not confirm still belonged in the results.
+
+That worked, and it was a bad trade. Results went from zero to six — and **five of the six links were dead.** Not guessed paths on real funders, which the fallback handles: dead *domains*. Told to reach a number, the model had begun assembling organisations that sound exactly like real grantmakers and do not exist.
+
+The rule that fixed it draws the line at the search result rather than at confidence:
+
+> Every single one must be an organisation that actually appeared in your search results. If you did not see the funder in a search result, it does not go in the list, however plausible it sounds. Three real funders is a good answer; six with two invented ones is a bad answer, because the reader cannot tell which is which.
+
+Plus the same rule for the URL, which is the part most easily fabricated: use the address as it appeared, and if you did not see one, use the funder's homepage — a short address is far likelier to be real than a guessed `/grants/apply-2026`.
+
+Same profile, after: five grants, three verified, one inconclusive, one caught. The gate's job is to catch what slips through, not to license the model to guess.
+
 ### The gate, and why its verdicts are deliberately lopsided
 
 `src/lib/verify-link.ts` fetches every URL the model produced. What matters is what it refuses to conclude:
@@ -97,7 +113,9 @@ Every failure in this post came out of a live, unmodified run against the deploy
 - **Eligibility and match reasoning are the model's reading**, unverified by anything.
 - **The LOI is a first draft**, not a submission. It is there to get past a blank page.
 - **No real NGO has used this.** It is tested against profiles I wrote.
-- **Grounded results are narrower.** Turning grounding on cut a six-grant answer to three or four. That is the honest number, and the six were partly fiction.
+- **Grounded results are narrower.** Turning grounding on cut a six-grant answer to three or five. That is the honest number, and the six were partly fiction.
+- **It is slow.** 30–120 seconds per search, because 10–30 real Google searches happen and then every URL returned is fetched. That is the cost of not guessing, but it is a real cost and I have not hidden it behind a fake progress bar.
+- **Results vary between identical runs.** The same profile returns different funders each time, and the caught-link rate moves with it. There is no seed to pin.
 
 ## Prize Categories
 

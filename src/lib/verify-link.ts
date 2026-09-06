@@ -64,7 +64,11 @@ export async function checkLink(rawUrl: string): Promise<LinkCheck> {
   if (status === "broken" && parsed.pathname !== "/") {
     const root = `${parsed.origin}/`;
     const rootCheck = await attempt(new URL(root), "GET");
-    if (rootCheck.status === "verified") {
+    // Anything short of "the domain isn't there" is evidence the funder is
+    // real and only the path was guessed. A 403 from bot protection still
+    // means somebody is serving that domain, so treat it as a live site
+    // rather than condemning a real funder as broken.
+    if (rootCheck.status === "verified" || rootCheck.status === "unverified") {
       return { url: rootCheck.url ?? root, status: "funder-site", claimedUrl: url };
     }
   }

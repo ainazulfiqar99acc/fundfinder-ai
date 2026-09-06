@@ -52,6 +52,14 @@ export default function LoiModal({
         </div>
 
         <div className="overflow-y-auto p-5">
+          {grant.linkStatus === "broken" && (
+            <p className="mb-3 rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
+              <strong>We could not reach this funder&apos;s page.</strong> The
+              URL given for {grant.funder} did not resolve, so we cannot confirm
+              this grant — or this funder — exists. Confirm independently before
+              you spend any time on this letter.
+            </p>
+          )}
           <p className="mb-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200">
             AI-generated draft. Review carefully, verify all facts and the
             funder&apos;s current guidelines, and personalize before sending.

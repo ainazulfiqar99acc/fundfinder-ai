@@ -47,3 +47,6 @@ dev.err.log
 
 # ...but the template must ship
 !.env.local.example
+
+# capture output - uploaded to dev.to, not committed
+media/

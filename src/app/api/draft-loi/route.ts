@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { getGeminiClient, DRAFT_MODEL } from "@/lib/gemini";
 import type { Grant, NGOProfile } from "@/types";
 
+/** Drafting is a single ungrounded call, but the stronger model is not fast. */
+export const maxDuration = 120;
+
 export async function POST(req: NextRequest) {
   if (!process.env.GEMINI_API_KEY) {
     return NextResponse.json(

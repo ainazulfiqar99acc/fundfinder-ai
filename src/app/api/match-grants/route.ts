@@ -1,7 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { extractJson, getGeminiClient, SEARCH_MODEL } from "@/lib/gemini";
 import { checkLink } from "@/lib/verify-link";
-import type { Grant, GrantSearchResult, GrantSource, NGOProfile } from "@/types";
+import type {
+  Grant,
+  GrantSearchResult,
+  GrantSource,
+  LinkStatus,
+  NGOProfile,
+} from "@/types";
+
+/**
+ * Grounded search legitimately takes 50-120s: the model runs 10-30 real Google
+ * searches, then every URL it returns is fetched to verify it. Without this the
+ * platform default cuts a working search off mid-flight.
+ */
+export const maxDuration = 300;
 
 export async function POST(req: NextRequest) {
   if (!process.env.GEMINI_API_KEY) {
@@ -39,7 +52,11 @@ Focus areas: ${profile.focusAreas || "Not specified"}
 Annual budget size: ${profile.budgetSize || "Not specified"}
 Target population: ${profile.targetPopulation || "Not specified"}
 
-Find up to 6 real, currently open grants that fit this NGO.
+Search broadly before concluding nothing fits. A grant does not have to name this NGO's exact niche to be a real fit: widen to the adjacent categories (the broader sector, the wider region or continent, the general population served) and include rolling and always-open programmes, which are by definition currently open. Run several different searches rather than one.
+
+Aim for 4-6 grants, but every single one must be an organisation that actually appeared in your search results. This is the hard rule: if you did not see the funder in a search result, it does not go in the list, however plausible it sounds. Do not assemble a name from what a funder in this space would probably be called. Three real funders is a good answer; six with two invented ones is a bad answer, because the reader cannot tell which is which.
+
+The same applies to the URL, which is the part most easily invented. Use the web address exactly as it appeared in the search result. If you did not see the URL, use the funder's homepage — a short address like https://www.example.org is far more likely to be real than a guessed deeper path like https://www.example.org/grants/apply-2026, and a homepage that works is more use than a specific page that does not exist.
 
 Respond with ONLY a JSON array (no markdown fences, no prose before or after) where each item has exactly these fields:
 [
@@ -55,7 +72,7 @@ Respond with ONLY a JSON array (no markdown fences, no prose before or after) wh
   }
 ]
 
-If you cannot find any currently open grants with high confidence, return an empty array [].`;
+If you genuinely found no plausible funder, return an empty array [].`;
 
   try {
     const ai = getGeminiClient();
@@ -105,6 +122,17 @@ If you cannot find any currently open grants with high confidence, return an emp
         return { ...grant, applicationUrl: url, claimedUrl, linkStatus: status };
       })
     );
+
+    // Surface what we could actually stand behind. A grant whose page we
+    // reached is worth more to the user than one we could not, so the ones
+    // that survived the check lead - nothing is hidden, only ordered.
+    const RANK: Record<LinkStatus, number> = {
+      verified: 0,
+      "funder-site": 1,
+      unverified: 2,
+      broken: 3,
+    };
+    grants.sort((a, b) => RANK[a.linkStatus] - RANK[b.linkStatus]);
 
     const groundingMetadata = response.candidates?.[0]?.groundingMetadata;
     const searchQueries = groundingMetadata?.webSearchQueries ?? [];

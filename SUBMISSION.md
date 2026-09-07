@@ -16,7 +16,7 @@ The interesting part is not that it searches. It is everything the app does to e
 
 **Live: [fundfinder-ai.vercel.app](https://fundfinder-ai.vercel.app)** — describe an NGO, get grants, open a drafted Letter of Inquiry.
 
-<!-- IMAGE 1: media/fundfinder-demo.gif  (the full flow, sped up) -->
+![An NGO profile goes in; Gemini searches, every returned link is checked, and verified grants come back](https://raw.githubusercontent.com/unicorn-9-spec/fundfinder-ai/main/media/fundfinder-demo.gif)
 
 Give it 30–120 seconds. It is running ten to thirty real Google searches and then fetching every URL that comes back, and the page shows you the clock while it does. Paste this in if you would rather not invent an NGO:
 
@@ -40,9 +40,7 @@ A real, unmodified run against the deployed app, for a girls' STEM education NGO
   resolve
 ```
 
-<!-- IMAGE 2: media/04-link-caught.png
-     caption: A dead funder link caught, with the grounding panel below it
-     listing that same funder among the pages Google retrieved -->
+![A dead funder link caught, with the grounding panel below it listing that same funder among the pages Google retrieved](https://raw.githubusercontent.com/unicorn-9-spec/fundfinder-ai/main/media/04-link-caught.png)
 
 The bottom row is the product working — and the grounding panel on that same page lists `hansenfamilyfoundation.org` among the pages it retrieved. Google's index has that funder. The live site does not answer. **Grounding retrieved it and the URL is still dead** — which is the entire argument for checking rather than trusting, in one row.
 
@@ -52,8 +50,7 @@ An earlier run caught a harder one: `au-eu-youthlab.com`, a confident, plausible
 
 When the link does check out, a second Gemini call drafts the letter — carrying its own standing caution, because a first draft is not a submission:
 
-<!-- IMAGE 3: media/06-loi-modal.png
-     caption: The drafted Letter of Inquiry, with its own standing caution -->
+![The drafted Letter of Inquiry, carrying its own standing caution that it is an AI draft to be checked before sending](https://raw.githubusercontent.com/unicorn-9-spec/fundfinder-ai/main/media/06-loi-modal.png)
 
 ### You do not have to take the screenshots on faith
 

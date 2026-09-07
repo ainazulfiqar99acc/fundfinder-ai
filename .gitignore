@@ -1,4 +1,4 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+﻿# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
 /node_modules
@@ -48,5 +48,7 @@ dev.err.log
 # ...but the template must ship
 !.env.local.example
 
-# capture output - uploaded to dev.to, not committed
-media/
+# Screenshots and the demo gif ARE committed: the write-up references them by
+# raw URL, so they must resolve from the repo. Only the raw capture video is
+# excluded - it is the source for the gif and nothing links to it.
+media/*.webm

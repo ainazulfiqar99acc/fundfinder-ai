@@ -46,11 +46,14 @@ A real, unmodified run against the deployed app, for a girls' STEM education NGO
 
 The bottom row is the product working — and the grounding panel on that same page lists `hansenfamilyfoundation.org` among the pages it retrieved. Google's index has that funder. The live site does not answer. **Grounding retrieved it and the URL is still dead** — which is the entire argument for checking rather than trusting, in one row.
 
-Ask for a Letter of Inquiry against that grant and the app says so before you write a word:
-
-<!-- IMAGE 3: media/07-loi-unreachable-warning.png -->
+Ask for a Letter of Inquiry against a grant in that state and the app says so in red before you write a word: *we could not reach this funder's page, so we cannot confirm this grant — or this funder — exists.* Drafting a warm, professional letter to an organisation that may not exist is the failure this whole project is against, and the button that does it should not be silent about it.
 
 An earlier run caught a harder one: `au-eu-youthlab.com`, a confident, plausible, entirely non-existent domain. DNS does not resolve it. It never reached the user.
+
+When the link does check out, a second Gemini call drafts the letter — carrying its own standing caution, because a first draft is not a submission:
+
+<!-- IMAGE 3: media/06-loi-modal.png
+     caption: The drafted Letter of Inquiry, with its own standing caution -->
 
 ### You do not have to take the screenshots on faith
 
@@ -123,7 +126,7 @@ The rule that fixed it draws the line at the search result rather than at confid
 
 Plus the same rule for the URL, which is the part most easily fabricated: use the address as it appeared, and if you did not see one, use the funder's homepage — a short address is far likelier to be real than a guessed `/grants/apply-2026`.
 
-Same profile, after: five grants, three verified, one inconclusive, one caught. The gate's job is to catch what slips through, not to license the model to guess.
+Same profile, after: five grants, three verified, one inconclusive, one caught. A later run on the same profile came back four for four. The gate's job is to catch what slips through, not to license the model to guess — and the better the rule got, the less often the gate had anything to do.
 
 ### The bug in the gate itself
 

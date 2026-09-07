@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <rect width="32" height="32" rx="7" fill="#047857"/>
+  <!-- a document, and a magnifier over it: find the grant, then check it -->
+  <path d="M9 7h9l5 5v6.5h-2.5V13H17V9.5H11.5v13H15V25H9z" fill="#ffffff" opacity="0.95"/>
+  <circle cx="20" cy="20" r="4.6" fill="none" stroke="#ffffff" stroke-width="2.2"/>
+  <path d="M23.4 23.4 27 27" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round"/>
+</svg>

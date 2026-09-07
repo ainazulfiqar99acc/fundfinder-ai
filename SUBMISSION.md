@@ -1,3 +1,27 @@
+<!--
+IMAGE PLAN  (these comments do not render; safe to leave in)
+
+  COVER  set in the dev.to editor sidebar, NOT in this body. 1000x420.
+         See the generation prompt in the handoff notes.
+
+  [1] hero gif      media/fundfinder-demo.gif      -> in Demo, under the live link
+      Replace with the hand-recorded take when it exists; same filename,
+      same URL, nothing else changes.
+
+  [2] caught link   media/04-link-caught.png       -> in Demo, under the results block
+      The Hansen card badged "didn't resolve", with the grounding panel
+      beneath it listing that same funder under "Pages retrieved".
+
+  [3] LOI modal     media/06-loi-modal.png         -> in Demo, near the end
+
+  OPTIONAL [4] media/02-searching.png  -> could sit beside the "It is slow"
+      bullet in Limitations: the live panel, elapsed counter and skeletons.
+      Only add it if the post feels thin on visuals; three is enough.
+
+  All three are committed and served from raw.githubusercontent.com, so the
+  post renders anywhere it is pasted with no editor upload step.
+-->
+
 *This is a submission for [Weekend Challenge: Generosity Edition](https://dev.to/challenges/weekend-2026-09-03)*
 
 ## What I Built
@@ -16,6 +40,7 @@ The interesting part is not that it searches. It is everything the app does to e
 
 **Live: [fundfinder-ai.vercel.app](https://fundfinder-ai.vercel.app)** — describe an NGO, get grants, open a drafted Letter of Inquiry.
 
+<!-- [1] hero gif — swap the file, keep the URL -->
 ![An NGO profile goes in; Gemini searches, every returned link is checked, and verified grants come back](https://raw.githubusercontent.com/ainazulfiqar99acc/fundfinder-ai/main/media/fundfinder-demo.gif)
 
 Give it 30–120 seconds. It is running ten to thirty real Google searches and then fetching every URL that comes back, and the page shows you the clock while it does. Paste this in if you would rather not invent an NGO:

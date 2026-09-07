@@ -16,7 +16,7 @@ The interesting part is not that it searches. It is everything the app does to e
 
 **Live: [fundfinder-ai.vercel.app](https://fundfinder-ai.vercel.app)** — describe an NGO, get grants, open a drafted Letter of Inquiry.
 
-![An NGO profile goes in; Gemini searches, every returned link is checked, and verified grants come back](https://raw.githubusercontent.com/unicorn-9-spec/fundfinder-ai/main/media/fundfinder-demo.gif)
+![An NGO profile goes in; Gemini searches, every returned link is checked, and verified grants come back](https://raw.githubusercontent.com/ainazulfiqar99acc/fundfinder-ai/main/media/fundfinder-demo.gif)
 
 Give it 30–120 seconds. It is running ten to thirty real Google searches and then fetching every URL that comes back, and the page shows you the clock while it does. Paste this in if you would rather not invent an NGO:
 
@@ -40,7 +40,7 @@ A real, unmodified run against the deployed app, for a girls' STEM education NGO
   resolve
 ```
 
-![A dead funder link caught, with the grounding panel below it listing that same funder among the pages Google retrieved](https://raw.githubusercontent.com/unicorn-9-spec/fundfinder-ai/main/media/04-link-caught.png)
+![A dead funder link caught, with the grounding panel below it listing that same funder among the pages Google retrieved](https://raw.githubusercontent.com/ainazulfiqar99acc/fundfinder-ai/main/media/04-link-caught.png)
 
 The bottom row is the product working — and the grounding panel on that same page lists `hansenfamilyfoundation.org` among the pages it retrieved. Google's index has that funder. The live site does not answer. **Grounding retrieved it and the URL is still dead** — which is the entire argument for checking rather than trusting, in one row.
 
@@ -50,14 +50,14 @@ An earlier run caught a harder one: `au-eu-youthlab.com`, a confident, plausible
 
 When the link does check out, a second Gemini call drafts the letter — carrying its own standing caution, because a first draft is not a submission:
 
-![The drafted Letter of Inquiry, carrying its own standing caution that it is an AI draft to be checked before sending](https://raw.githubusercontent.com/unicorn-9-spec/fundfinder-ai/main/media/06-loi-modal.png)
+![The drafted Letter of Inquiry, carrying its own standing caution that it is an AI draft to be checked before sending](https://raw.githubusercontent.com/ainazulfiqar99acc/fundfinder-ai/main/media/06-loi-modal.png)
 
 ### You do not have to take the screenshots on faith
 
 This is a post about plausible output not being proof, so the central claim — that the app searches rather than remembers — ships as a runnable check. It talks to the Gemini API and nothing else: not my server, not my code paths. About thirty seconds:
 
 ```bash
-git clone https://github.com/unicorn-9-spec/fundfinder-ai && cd fundfinder-ai
+git clone https://github.com/ainazulfiqar99acc/fundfinder-ai && cd fundfinder-ai
 npm install
 cp .env.local.example .env.local   # then put your key in it
 npm run check-grounding
@@ -67,14 +67,14 @@ It prints which models actually honour `googleSearch` and **exits non-zero if th
 
 ## Code
 
-{% github unicorn-9-spec/fundfinder-ai %}
+{% github ainazulfiqar99acc/fundfinder-ai %}
 
 Four files carry the argument:
 
-- [`src/lib/verify-link.ts`](https://github.com/unicorn-9-spec/fundfinder-ai/blob/main/src/lib/verify-link.ts) — the gate. The asymmetry between `broken` and `unverified` is the whole design, and the comments say why.
-- [`scripts/check-grounding.mjs`](https://github.com/unicorn-9-spec/fundfinder-ai/blob/main/scripts/check-grounding.mjs) — the four-model grounding check above.
-- [`src/app/api/match-grants/route.ts`](https://github.com/unicorn-9-spec/fundfinder-ai/blob/main/src/app/api/match-grants/route.ts) — the grounded call, the prompt rule that every funder must have appeared in a search result, and verified-first ranking.
-- [`src/types/index.ts`](https://github.com/unicorn-9-spec/fundfinder-ai/blob/main/src/types/index.ts) — four link states, with the reasoning for each written into the type.
+- [`src/lib/verify-link.ts`](https://github.com/ainazulfiqar99acc/fundfinder-ai/blob/main/src/lib/verify-link.ts) — the gate. The asymmetry between `broken` and `unverified` is the whole design, and the comments say why.
+- [`scripts/check-grounding.mjs`](https://github.com/ainazulfiqar99acc/fundfinder-ai/blob/main/scripts/check-grounding.mjs) — the four-model grounding check above.
+- [`src/app/api/match-grants/route.ts`](https://github.com/ainazulfiqar99acc/fundfinder-ai/blob/main/src/app/api/match-grants/route.ts) — the grounded call, the prompt rule that every funder must have appeared in a search result, and verified-first ranking.
+- [`src/types/index.ts`](https://github.com/ainazulfiqar99acc/fundfinder-ai/blob/main/src/types/index.ts) — four link states, with the reasoning for each written into the type.
 
 ## How I Built It
 
